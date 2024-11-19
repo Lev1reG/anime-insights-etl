@@ -68,6 +68,43 @@ class JikanExtractor:
             logging.error(f"Error while fetching anime data: {e}")
             return None
 
+    def fetch_anime_reviews(self, mal_id, page=1):
+        """
+        Fetch reviews for a specific anime from Jikan API.
+        
+        Args:
+            mal_id (int): The MyAnimeList ID of the anime.
+            page (int): The page number of the reviews to fetch.
+
+        Returns:
+            list: List of dictionaries containing anime reviews.
+        """
+        endpoint = f"{self.base_url}/anime/{mal_id}/reviews"
+        params = {"page": page}
+
+        try:
+            response = requests.get(endpoint, params=params)
+            response.raise_for_status()
+            logging.info(f"Successfully fetched reviews for anime ID {mal_id}, page {page}.")
+            data = response.json()
+            review_list = data["data"]
+            records = []
+            for review in review_list:
+                records.append(
+                    {
+                        "mal_id": mal_id,
+                        "username": review.get("user", {}).get("username"),
+                        "tags": review.get("tags", []),
+                        "episodes_watched": review.get("episodes_watched"),
+                        "review": review.get("review"),
+                        "score": review.get("score"),
+                    }
+                )
+            return records
+        except requests.exceptions.RequestException as e:
+            logging.error(f"Error while fetching reviews for anime ID {mal_id}: {e}")
+            return None
+
     def extract_to_dataframe(self, data):
         """
         Convert JSON data or list into a DataFrame.
@@ -96,10 +133,18 @@ if __name__ == "__main__":
     extractor = JikanExtractor()
 
     # Fetch anime by season
-    year = 2024
-    season = "fall"
+    year = 2021
+    season = "summer"
     anime_data = extractor.fetch_anime_by_season(year, season, page=1)
 
     if anime_data:
         anime_df = extractor.extract_to_dataframe(anime_data)
         print(anime_df.head())
+
+        # Fetch and print reviews for the first anime in the DataFrame
+        if not anime_df.empty:
+            mal_id = anime_df.iloc[0]['mal_id']
+            reviews_data = extractor.fetch_anime_reviews(mal_id, page=1)
+            if reviews_data:
+                reviews_df = extractor.extract_to_dataframe(reviews_data)
+                print(reviews_df.head())
