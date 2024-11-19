@@ -97,10 +97,102 @@ class AnilistExtractor:
 
         return records
 
+    def fetch_top_anime(self):
+        """
+        Fetch top 50 anime from AniList API.
+
+        Returns:
+            list: List of dictionaries containing anime score and watch count.
+        """
+        query = """
+        query ($page: Int) {
+            Page(page: $page, perPage: 50) {
+                media(type: ANIME, sort: [SCORE_DESC, POPULARITY_DESC]) {
+                    id
+                    idMal
+                    title {
+                        romaji
+                        english
+                    }
+                    averageScore
+                    popularity
+                    stats {
+                        statusDistribution {
+                            status
+                            amount
+                        }
+                    }
+                }
+            }
+        }
+        """
+
+        records = []
+        page = 1
+
+        while page <= 1:  # Only fetching the first page to get top 50 anime
+            variables = {"page": page}
+
+            try:
+                response = requests.post(
+                    self.api_url, json={"query": query, "variables": variables}
+                )
+                if response.status_code != 200:
+                    logging.error(
+                        f"Query failed to run by returning code of {response.status_code}. {response.text}"
+                    )
+                    break
+                response.raise_for_status()
+                logging.info(f"Successfully fetched top anime data, page {page}.")
+                data = response.json()["data"]["Page"]["media"]
+
+                if not data:
+                    logging.info(
+                        f"No more data available after page {page}. All pages have been fetched."
+                    )
+                    break
+
+                for anime in data:
+                    # Extract status distribution
+                    status_distribution = anime.get("stats", {}).get(
+                        "statusDistribution", []
+                    )
+                    watch_counts = {
+                        status["status"].lower(): status["amount"]
+                        for status in status_distribution
+                    }
+                    scored_by = anime.get(
+                        "popularity", 0
+                    )  # Using popularity as a proxy for the number of scores
+
+                    records.append(
+                        {
+                            "anime_id": anime["id"],
+                            "mal_id": anime.get("idMal"),
+                            "anime_title": anime["title"]["romaji"],
+                            "average_score": anime.get("averageScore"),
+                            "popularity": anime.get("popularity"),
+                            "watching": watch_counts.get("watching", 0),
+                            "completed": watch_counts.get("completed", 0),
+                            "dropped": watch_counts.get("dropped", 0),
+                            "on_hold": watch_counts.get("on_hold", 0),
+                            "plan_to_watch": watch_counts.get("plan_to_watch", 0),
+                            "scored_by": scored_by,
+                        }
+                    )
+                page += 1
+            except requests.exceptions.RequestException as e:
+                logging.error(
+                    f"Error while fetching top anime data on page {page}: {e}"
+                )
+                break
+
+        return records
+
     def fetch_anime_by_season(self, year, season):
         """
         Fetch anime data from AniList API based on year and season.
-        
+
         Args:
             year (int): The year of the anime season.
             season (str): The season (e.g., 'WINTER', 'SPRING', 'SUMMER', 'FALL').
@@ -135,29 +227,38 @@ class AnilistExtractor:
         page = 1
 
         while True:
-            variables = {
-                "year": year,
-                "season": season.upper(),
-                "page": page
-            }
+            variables = {"year": year, "season": season.upper(), "page": page}
 
             try:
-                response = requests.post(self.api_url, json={"query": query, "variables": variables})
+                response = requests.post(
+                    self.api_url, json={"query": query, "variables": variables}
+                )
                 if response.status_code != 200:
-                    logging.error(f"Query failed to run by returning code of {response.status_code}. {response.text}")
+                    logging.error(
+                        f"Query failed to run by returning code of {response.status_code}. {response.text}"
+                    )
                     break
                 response.raise_for_status()
-                logging.info(f"Successfully fetched anime data for {season} {year}, page {page}.")
+                logging.info(
+                    f"Successfully fetched anime data for {season} {year}, page {page}."
+                )
                 data = response.json()["data"]["Page"]["media"]
 
                 if not data:
-                    logging.info(f"No more data available after page {page}. All pages have been fetched.")
+                    logging.info(
+                        f"No more data available after page {page}. All pages have been fetched."
+                    )
                     break
 
                 for anime in data:
                     # Extract status distribution
-                    status_distribution = anime.get("stats", {}).get("statusDistribution", [])
-                    watch_counts = {status["status"].lower(): status["amount"] for status in status_distribution}
+                    status_distribution = anime.get("stats", {}).get(
+                        "statusDistribution", []
+                    )
+                    watch_counts = {
+                        status["status"].lower(): status["amount"]
+                        for status in status_distribution
+                    }
 
                     records.append(
                         {
@@ -175,7 +276,9 @@ class AnilistExtractor:
                     )
                 page += 1
             except requests.exceptions.RequestException as e:
-                logging.error(f"Error while fetching anime data for {season} {year} on page {page}: {e}")
+                logging.error(
+                    f"Error while fetching anime data for {season} {year} on page {page}: {e}"
+                )
                 break
 
         return records
@@ -203,17 +306,7 @@ class AnilistExtractor:
 if __name__ == "__main__":
     extractor = AnilistExtractor()
 
-    # Fetch anime reviews by MyAnimeList ID
-    mal_id = 51019
-    reviews_data = extractor.fetch_anime_reviews_by_mal_id(mal_id)
-
-    if reviews_data:
-        reviews_df = extractor.extract_to_dataframe(reviews_data)
-        print(reviews_df.head(15))
-
-    year = 2021
-    season = "SUMMER"
-    score_watch_data = extractor.fetch_anime_by_season(year, season)
-    if score_watch_data:
-        score_watch_df = extractor.extract_to_dataframe(score_watch_data)
-        print(score_watch_df.head())
+    top_anime_data = extractor.fetch_top_anime()
+    if top_anime_data:
+        top_anime_df = extractor.extract_to_dataframe(top_anime_data)
+        print(top_anime_df.head())
