@@ -56,6 +56,7 @@ class JikanExtractor:
                             "type": anime.get("type"),
                             "episodes": anime.get("episodes"),
                             "score": anime.get("score"),
+                            "scored_by": anime.get("scored_by"),
                             "start_date": anime.get("aired", {}).get("from"),
                             "end_date": anime.get("aired", {}).get("to"),
                             "popularity": anime.get("popularity"),
@@ -181,8 +182,8 @@ if __name__ == "__main__":
     extractor = JikanExtractor()
 
     # Fetch anime by season
-    year = 2024
-    season = "fall"
+    year = 2008
+    season = "summer"
     anime_data = extractor.fetch_anime_by_season(year, season)
 
     if anime_data:
