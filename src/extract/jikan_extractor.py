@@ -18,7 +18,7 @@ class JikanExtractor:
     def fetch_anime_by_season(self, year, season):
         """
         Fetch anime by year and season from Jikan API.
-
+        
         Args:
             year (int): The year of the anime season.
             season (str): The season (e.g., 'winter', 'spring', 'summer', 'fall').
@@ -43,15 +43,15 @@ class JikanExtractor:
                 anime_list = data["data"]
 
                 if not anime_list:
-                    logging.info(
-                        f"No more data available after page {page}. All pages have been fetched."
-                    )
+                    logging.info(f"No more data available after page {page}. All pages have been fetched.")
                     break
 
                 for anime in anime_list:
+                    mal_id = anime.get("mal_id")
+                    statistics_data = self.fetch_anime_statistics(mal_id)
                     records.append(
                         {
-                            "mal_id": anime.get("mal_id"),
+                            "mal_id": mal_id,
                             "title": anime.get("title"),
                             "type": anime.get("type"),
                             "episodes": anime.get("episodes"),
@@ -59,21 +59,22 @@ class JikanExtractor:
                             "start_date": anime.get("aired", {}).get("from"),
                             "end_date": anime.get("aired", {}).get("to"),
                             "popularity": anime.get("popularity"),
-                            "genres": [
-                                genre["name"] for genre in anime.get("genres", [])
-                            ],
+                            "genres": [genre["name"] for genre in anime.get("genres", [])],
                             "producers": [
-                                producer["name"]
-                                for producer in anime.get("producers", [])
+                                producer["name"] for producer in anime.get("producers", [])
                             ],
-                            "studios": [
-                                studio["name"] for studio in anime.get("studios", [])
-                            ],
+                            "studios": [studio["name"] for studio in anime.get("studios", [])],
+                            "watching": statistics_data.get("watching") if statistics_data else None,
+                            "completed": statistics_data.get("completed") if statistics_data else None,
+                            "on_hold": statistics_data.get("on_hold") if statistics_data else None,
+                            "dropped": statistics_data.get("dropped") if statistics_data else None,
+                            "plan_to_watch": statistics_data.get("plan_to_watch") if statistics_data else None,
+                            "total": statistics_data.get("total") if statistics_data else None,
                         }
                     )
                 page += 1
             except requests.exceptions.RequestException as e:
-                logging.error(f"Error while fetching anime data: {e}")
+                logging.error(f"Error while fetching anime data on page {page}: {e}")
                 break
 
         return records
@@ -130,6 +131,28 @@ class JikanExtractor:
 
         return records
 
+    def fetch_anime_statistics(self, mal_id):
+        """
+        Fetch statistics for a specific anime from Jikan API.
+
+        Args:
+            mal_id (int): The MyAnimeList ID of the anime.
+
+        Returns:
+            dict: Dictionary containing anime statistics.
+        """
+        endpoint = f"{self.base_url}/anime/{mal_id}/statistics"
+
+        try:
+            response = requests.get(endpoint)
+            response.raise_for_status()
+            logging.info(f"Successfully fetched statistics for anime ID {mal_id}.")
+            data = response.json()
+            return data["data"]
+        except requests.exceptions.RequestException as e:
+            logging.error(f"Error while fetching statistics for anime ID {mal_id}: {e}")
+            return None
+
     def extract_to_dataframe(self, data):
         """
         Convert JSON data or list into a DataFrame.
@@ -158,8 +181,8 @@ if __name__ == "__main__":
     extractor = JikanExtractor()
 
     # Fetch anime by season
-    year = 2021
-    season = "summer"
+    year = 2024
+    season = "fall"
     anime_data = extractor.fetch_anime_by_season(year, season)
 
     if anime_data:
