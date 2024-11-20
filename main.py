@@ -94,7 +94,7 @@ if __name__ == '__main__':
   # Save results
   SaveData.save_data_to_file(merged_top_data, 'data/top_anime_data', file_format='csv')
   SaveData.save_data_to_file(trending_50_anilist_df_cleaned, 'data/trending_anime_data', file_format='csv')
-  SaveData.save_data_to_file(merged_current_data, 'data/current_anime_data', file_format='csv')
+  SaveData.save_data_to_file(merged_current_data, 'data/current_season_anime_data', file_format='csv')
   SaveData.save_data_to_file(top_50_reviews_df, 'data/top_anime_reviews', file_format='csv')
   SaveData.save_data_to_file(trending_50_reviews_df, 'data/trending_anime_reviews', file_format='csv')
   SaveData.save_data_to_file(current_season_reviews_df, 'data/current_season_anime_reviews', file_format='csv')
