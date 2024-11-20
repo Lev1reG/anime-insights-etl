@@ -44,10 +44,12 @@ class TransformAnimeData:
         current_date = datetime.now().date()
         data_df['fetched_date'] = current_date
 
-        # Add a unique anime ID for internal reference
-        data_df.insert(0, 'anime_id', [str(uuid.uuid4()) for _ in range(len(data_df))])
+        # Add a unique anime ID for internal reference, if not already present
+        if 'anime_id' not in data_df.columns:
+            data_df.insert(0, 'anime_id', [str(uuid.uuid4()) for _ in range(len(data_df))])
 
         return data_df
+
 
 
     def merge_and_clean_data(self, jikan_df, anilist_df):
