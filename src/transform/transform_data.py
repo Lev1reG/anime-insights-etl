@@ -30,6 +30,25 @@ class TransformAnimeData:
                 return f"{title_jikan} / {title_anilist}"
             
         return title_jikan or title_anilist
+    
+    def clean_data(self, data_df):
+        """Clean the trending data fetched from the Anilist API."""
+        # Rename and adjust columns to match the unified format
+        data_df.rename(columns={'anime_title': 'title', 'average_score': 'score'}, inplace=True)
+        data_df['score'] = data_df['score'] / 10  # Normalize score to match Jikan's scale (0-10)
+
+        # Handle missing values (if any)
+        data_df.dropna(subset=['mal_id', 'title'], inplace=True)  # Ensure essential columns are not missing
+
+        # Add additional columns
+        current_date = datetime.now().date()
+        data_df['fetched_date'] = current_date
+
+        # Add a unique anime ID for internal reference
+        data_df.insert(0, 'anime_id', [str(uuid.uuid4()) for _ in range(len(data_df))])
+
+        return data_df
+
 
     def merge_and_clean_data(self, jikan_df, anilist_df):
         """Merge and clean the data from Jikan and Anilist."""
