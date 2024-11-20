@@ -1,6 +1,7 @@
 import requests
 import pandas as pd
 import logging
+import difflib
 
 pd.set_option("display.max_columns", 200)
 
@@ -195,7 +196,7 @@ class JikanExtractor:
 
         return records
 
-    def fetch_anime_reviews(self, mal_id):
+    def fetch_anime_reviews(self, mal_id, page_limit=None):
         """
         Fetch all reviews for a specific anime from Jikan API.
 
@@ -209,43 +210,82 @@ class JikanExtractor:
         records = []
         page = 1
 
-        while True:
-            params = {"page": page}
+        if page_limit is not None:
+            while page <= page_limit:
+                params = {"page": page}
 
-            try:
-                response = requests.get(endpoint, params=params)
-                response.raise_for_status()
-                logging.info(
-                    f"Successfully fetched reviews for anime ID {mal_id}, page {page}."
-                )
-                data = response.json()
-                review_list = data["data"]
-
-                if not review_list:
+                try:
+                    response = requests.get(endpoint, params=params)
+                    response.raise_for_status()
                     logging.info(
-                        f"No more reviews available after page {page}. All pages have been fetched."
+                        f"Successfully fetched reviews for anime ID {mal_id}, page {page}."
+                    )
+                    data = response.json()
+                    review_list = data["data"]
+
+                    if not review_list:
+                        logging.info(
+                            f"No more reviews available after page {page}. All pages have been fetched."
+                        )
+                        break
+
+                    for review in review_list:
+                        records.append(
+                            {
+                                "mal_id": mal_id,
+                                "username": review.get("user", {}).get("username"),
+                                "tags": review.get("tags", []),
+                                "episodes_watched": review.get("episodes_watched"),
+                                "review": review.get("review"),
+                                "score": review.get("score"),
+                            }
+                        )
+                    page += 1
+                except requests.exceptions.RequestException as e:
+                    logging.error(
+                        f"Error while fetching reviews for anime ID {mal_id}, page {page}: {e}"
                     )
                     break
 
-                for review in review_list:
-                    records.append(
-                        {
-                            "mal_id": mal_id,
-                            "username": review.get("user", {}).get("username"),
-                            "tags": review.get("tags", []),
-                            "episodes_watched": review.get("episodes_watched"),
-                            "review": review.get("review"),
-                            "score": review.get("score"),
-                        }
-                    )
-                page += 1
-            except requests.exceptions.RequestException as e:
-                logging.error(
-                    f"Error while fetching reviews for anime ID {mal_id}, page {page}: {e}"
-                )
-                break
+            return records
+        else:
+            while True:
+                params = {"page": page}
 
-        return records
+                try:
+                    response = requests.get(endpoint, params=params)
+                    response.raise_for_status()
+                    logging.info(
+                        f"Successfully fetched reviews for anime ID {mal_id}, page {page}."
+                    )
+                    data = response.json()
+                    review_list = data["data"]
+
+                    if not review_list:
+                        logging.info(
+                            f"No more reviews available after page {page}. All pages have been fetched."
+                        )
+                        break
+
+                    for review in review_list:
+                        records.append(
+                            {
+                                "mal_id": mal_id,
+                                "username": review.get("user", {}).get("username"),
+                                "tags": review.get("tags", []),
+                                "episodes_watched": review.get("episodes_watched"),
+                                "review": review.get("review"),
+                                "score": review.get("score"),
+                            }
+                        )
+                    page += 1
+                except requests.exceptions.RequestException as e:
+                    logging.error(
+                        f"Error while fetching reviews for anime ID {mal_id}, page {page}: {e}"
+                    )
+                    break
+
+            return records
 
     def fetch_anime_statistics(self, mal_id):
         """
@@ -296,7 +336,8 @@ class JikanExtractor:
 if __name__ == "__main__":
     extractor = JikanExtractor()
 
-    top_anime_data = extractor.fetch_top_anime()
+    # top_anime_data = extractor.fetch_top_anime()
+    top_anime_data = extractor.fetch_anime_reviews(15417)
     if top_anime_data:
         top_anime_df = extractor.extract_to_dataframe(top_anime_data)
         print(top_anime_df.head())

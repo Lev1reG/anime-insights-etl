@@ -16,7 +16,7 @@ class AnilistExtractor:
     def __init__(self):
         self.api_url = ANILIST_API_URL
 
-    def fetch_anime_reviews_by_mal_id(self, mal_id):
+    def fetch_anime_reviews_by_mal_id(self, mal_id, page_limit=None):
         """
         Fetch anime reviews from AniList API based on MyAnimeList ID (mal_id).
 
@@ -53,49 +53,95 @@ class AnilistExtractor:
         records = []
         page = 1
 
-        while True:
-            variables = {"malId": mal_id, "page": page}
+        if page_limit is not None:
+            while page <= page_limit:
+                variables = {"malId": mal_id, "page": page}
 
-            try:
-                response = requests.post(
-                    self.api_url, json={"query": query, "variables": variables}
-                )
-                response.raise_for_status()
-                logging.info(
-                    f"Successfully fetched anime reviews for MAL ID {mal_id}, page {page}."
-                )
-                data = response.json()["data"]["Page"]["media"]
-
-                if not data:
+                try:
+                    response = requests.post(
+                        self.api_url, json={"query": query, "variables": variables}
+                    )
+                    response.raise_for_status()
                     logging.info(
-                        f"No more data available after page {page}. All pages have been fetched."
+                        f"Successfully fetched anime reviews for MAL ID {mal_id}, page {page}."
+                    )
+                    data = response.json()["data"]["Page"]["media"]
+
+                    if not data:
+                        logging.info(
+                            f"No more data available after page {page}. All pages have been fetched."
+                        )
+                        break
+
+                    for anime in data:
+                        anime_id = anime["id"]
+                        anime_title = anime["title"]["romaji"]
+                        reviews = anime.get("reviews", {}).get("nodes", [])
+
+                        for review in reviews:
+                            records.append(
+                                {
+                                    "anime_id": anime_id,
+                                    "mal_id": anime.get("idMal"),
+                                    "anime_title": anime_title,
+                                    "username": review["user"]["name"],
+                                    "review_body": review.get("body"),
+                                    "score": review["score"],
+                                }
+                            )
+                    page += 1
+                except requests.exceptions.RequestException as e:
+                    logging.error(
+                        f"Error while fetching anime reviews for MAL ID {mal_id} on page {page}: {e}"
                     )
                     break
 
-                for anime in data:
-                    anime_id = anime["id"]
-                    anime_title = anime["title"]["romaji"]
-                    reviews = anime.get("reviews", {}).get("nodes", [])
+            return records
+        
+        else:
+            while True:
+                variables = {"malId": mal_id, "page": page}
 
-                    for review in reviews:
-                        records.append(
-                            {
-                                "anime_id": anime_id,
-                                "mal_id": anime.get("idMal"),
-                                "anime_title": anime_title,
-                                "username": review["user"]["name"],
-                                "review_body": review.get("body"),
-                                "score": review["score"],
-                            }
+                try:
+                    response = requests.post(
+                        self.api_url, json={"query": query, "variables": variables}
+                    )
+                    response.raise_for_status()
+                    logging.info(
+                        f"Successfully fetched anime reviews for MAL ID {mal_id}, page {page}."
+                    )
+                    data = response.json()["data"]["Page"]["media"]
+
+                    if not data:
+                        logging.info(
+                            f"No more data available after page {page}. All pages have been fetched."
                         )
-                page += 1
-            except requests.exceptions.RequestException as e:
-                logging.error(
-                    f"Error while fetching anime reviews for MAL ID {mal_id} on page {page}: {e}"
-                )
-                break
+                        break
 
-        return records
+                    for anime in data:
+                        anime_id = anime["id"]
+                        anime_title = anime["title"]["romaji"]
+                        reviews = anime.get("reviews", {}).get("nodes", [])
+
+                        for review in reviews:
+                            records.append(
+                                {
+                                    "anime_id": anime_id,
+                                    "mal_id": anime.get("idMal"),
+                                    "anime_title": anime_title,
+                                    "username": review["user"]["name"],
+                                    "review_body": review.get("body"),
+                                    "score": review["score"],
+                                }
+                            )
+                    page += 1
+                except requests.exceptions.RequestException as e:
+                    logging.error(
+                        f"Error while fetching anime reviews for MAL ID {mal_id} on page {page}: {e}"
+                    )
+                    break
+
+            return records
 
     def fetch_top_anime(self):
         """
@@ -116,6 +162,7 @@ class AnilistExtractor:
                     }
                     averageScore
                     popularity
+                    genres
                     stats {
                         statusDistribution {
                             status
@@ -172,6 +219,7 @@ class AnilistExtractor:
                             "anime_title": anime["title"]["romaji"],
                             "average_score": anime.get("averageScore"),
                             "popularity": anime.get("popularity"),
+                            "genres": anime.get("genres", []),  # Genres list
                             "watching": watch_counts.get("watching", 0),
                             "completed": watch_counts.get("completed", 0),
                             "dropped": watch_counts.get("dropped", 0),
@@ -303,10 +351,10 @@ class AnilistExtractor:
         return df
 
 
-if __name__ == "__main__":
-    extractor = AnilistExtractor()
+# if __name__ == "__main__":
+#     extractor = AnilistExtractor()
 
-    top_anime_data = extractor.fetch_top_anime()
-    if top_anime_data:
-        top_anime_df = extractor.extract_to_dataframe(top_anime_data)
-        print(top_anime_df.head())
+#     top_anime_data = extractor.fetch_top_anime()
+#     if top_anime_data:
+#         top_anime_df = extractor.extract_to_dataframe(top_anime_data)
+#         print(top_anime_df.head())
