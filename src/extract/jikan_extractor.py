@@ -309,6 +309,57 @@ class JikanExtractor:
             logging.error(f"Error while fetching statistics for anime ID {mal_id}: {e}")
             return None
 
+    def fetch_anime_metadata_by_mal_id(self, mal_id):
+        """
+        Fetch anime metadata for a specific anime from Jikan API based on MyAnimeList ID (mal_id).
+
+        Args:
+            mal_id (int): The MyAnimeList ID of the anime.
+
+        Returns:
+            dict: Dictionary containing anime metadata.
+    """
+        endpoint = f"{BASE_URL}/anime/{mal_id}"
+
+        records = []
+
+        try:
+            response = requests.get(endpoint)
+            response.raise_for_status()
+            logging.info(f"Successfully fetched metadata for anime ID {mal_id}.")
+            data = response.json()["data"]
+
+            # Fetch statistics for the anime
+            statistics_data = self.fetch_anime_statistics(mal_id)
+
+            metadata = {
+                "mal_id": mal_id,
+                "title": data.get("title"),
+                "type": data.get("type"),
+                "episodes": data.get("episodes"),
+                "score": data.get("score"),
+                "scored_by": data.get("scored_by"),
+                "start_date": data.get("aired", {}).get("from"),
+                "end_date": data.get("aired", {}).get("to"),
+                "popularity": data.get("popularity"),
+                "genres": [genre["name"] for genre in data.get("genres", [])],
+                "producers": [producer["name"] for producer in data.get("producers", [])],
+                "studios": [studio["name"] for studio in data.get("studios", [])],
+                "watching": (statistics_data.get("watching") if statistics_data else None),
+                "completed": (statistics_data.get("completed") if statistics_data else None),
+                "on_hold": (statistics_data.get("on_hold") if statistics_data else None),
+                "dropped": (statistics_data.get("dropped") if statistics_data else None),
+                "plan_to_watch": (statistics_data.get("plan_to_watch") if statistics_data else None),
+                "total": (statistics_data.get("total") if statistics_data else None),
+            }
+            
+            records.append(metadata)
+            return records
+
+        except requests.exceptions.RequestException as e:
+            logging.error(f"Error while fetching metadata for anime ID {mal_id}: {e}")
+            return None
+
     def extract_to_dataframe(self, data):
         """
         Convert JSON data or list into a DataFrame.
@@ -336,8 +387,8 @@ class JikanExtractor:
 if __name__ == "__main__":
     extractor = JikanExtractor()
 
-    # top_anime_data = extractor.fetch_top_anime()
-    top_anime_data = extractor.fetch_anime_reviews(15417)
-    if top_anime_data:
-        top_anime_df = extractor.extract_to_dataframe(top_anime_data)
-        print(top_anime_df.head())
+    # Get meta data
+    haikyu_metadata = extractor.fetch_anime_metadata_by_mal_id(20583)
+    df = extractor.extract_to_dataframe(haikyu_metadata)
+    print(df.head())
+
