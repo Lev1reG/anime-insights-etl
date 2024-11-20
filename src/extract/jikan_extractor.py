@@ -389,6 +389,7 @@ if __name__ == "__main__":
 
     # Get meta data
     haikyu_metadata = extractor.fetch_anime_metadata_by_mal_id(20583)
+    # haikyu_metadata = extractor.fet(20583)
     df = extractor.extract_to_dataframe(haikyu_metadata)
     print(df.head())
 
