@@ -70,7 +70,16 @@ class TransformAnimeData:
         # - score: 9.32, 9.13
 
         # Rename and adjust Anilist columns
-        anilist_df.rename(columns={'anime_title': 'title', 'average_score': 'score'}, inplace=True)
+        anilist_df.rename(columns={
+            'anime_title': 'title', 
+            'average_score': 'score',
+            'current': 'current_anilist',
+            'planning': 'planning_anilist',
+            'completed': 'completed_anilist',
+            'dropped': 'dropped_anilist',
+            'paused': 'paused_anilist'
+        }, inplace=True)
+
         anilist_df['score'] = anilist_df['score'] / 10
 
         # Merge data
@@ -89,7 +98,8 @@ class TransformAnimeData:
         # Calculate average score
         merged_data['score'] = merged_data[['score_jikan', 'score_anilist']].mean(axis=1)
         merged_data['score'] = merged_data['score'].fillna(merged_data['score_jikan'])
-        merged_data['score'] = merged_data['score'].fillna(merged_data['score_anilist'])
+        # merged_data['score'] = merged_data['score'].fillna(merged_data['score_anilist'])
+        merged_data['score'] = merged_data['score'].fillna(merged_data['score'])
 
         # Drop unnecessary columns
         columns_to_drop = [
