@@ -2,6 +2,7 @@ import pandas as pd
 import uuid
 import difflib
 from thefuzz import fuzz
+from datetime import datetime
 
 class TransformAnimeData:
     def __init__(self, sentiment_analyzer):
@@ -74,11 +75,17 @@ class TransformAnimeData:
             'title_jikan', 'title_anilist', 'score_jikan', 'score_anilist',
             'type', 'episodes', 'start_date', 'end_date', 'popularity_jikan',
             'watching_jikan', 'completed_jikan', 'on_hold_jikan', 'dropped_jikan',
-            'plan_to_watch_jikan', 'total', 'anime_id', 'popularity_anilist',
-            'watching_anilist', 'completed_anilist', 'dropped_anilist',
+            'plan_to_watch_jikan', 'total', 'anime_id', 'popularity_anilist', 'dropped_anilist',
             'on_hold_anilist', 'plan_to_watch_anilist', 'scored_by'
         ]
         merged_data.drop(columns=columns_to_drop, inplace=True, errors='ignore')
+
+        merged_data.dropna(inplace=True)
+
+        current_date = datetime.now().date()
+        merged_data['fetched_date'] = current_date
+
+        merged_data.insert(0, 'anime_id', [str(uuid.uuid4()) for _ in range(len(merged_data))])
 
         return merged_data
 
@@ -126,5 +133,10 @@ class TransformAnimeData:
         # Add sentiment analysis
         reviews_df['sentiment_score'] = reviews_df['review'].apply(lambda r: self.sentiment_analyzer.analyze_sentiment(r)[0])
         reviews_df['sentiment_label'] = reviews_df['review'].apply(lambda r: self.sentiment_analyzer.analyze_sentiment(r)[1])
+
+        reviews_df.dropna(inplace=True)
+
+        current_date = datetime.now().date()
+        reviews_df['fetched_date'] = current_date
 
         return reviews_df
