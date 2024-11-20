@@ -45,10 +45,14 @@ class TransformAnimeData:
         data_df['fetched_date'] = current_date
 
         # Add a unique anime ID for internal reference, if not already present
-        if 'anime_id' not in data_df.columns:
-            data_df.insert(0, 'anime_id', [str(uuid.uuid4()) for _ in range(len(data_df))])
+        if 'anime_id' in data_df.columns:
+            data_df.drop(columns=['anime_id'], inplace=True)
+
+        # Add UUID at the very first column
+        data_df.insert(0, 'anime_id', [str(uuid.uuid4()) for _ in range(len(data_df))])
 
         return data_df
+
 
 
 

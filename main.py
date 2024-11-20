@@ -100,7 +100,11 @@ if __name__ == '__main__':
   SaveData.save_data_to_file(current_season_reviews_df, 'data/current_season_anime_reviews', file_format='csv')
 
   # Load transformed data into PostgreSQL
-  # dataloader.load_to_postgresql(merged_data, 'anime_data', db_config)
-  # dataloader.load_to_postgresql(reviews_df, 'anime_review', db_config)
+  dataloader.load_to_postgresql(merged_top_data, 'top_anime_data', db_config)
+  dataloader.load_to_postgresql(trending_50_anilist_df_cleaned, 'trending_anime_data', db_config)
+  dataloader.load_to_postgresql(merged_current_data, 'current_season_anime_data', db_config)
+  dataloader.load_to_postgresql(top_50_reviews_df, 'top_anime_reviews', db_config)
+  dataloader.load_to_postgresql(trending_50_reviews_df, 'trending_anime_reviews', db_config)
+  dataloader.load_to_postgresql(current_season_reviews_df, 'current_season_anime_reviews', db_config)
 
   print("Data transformation and review processing complete.")
