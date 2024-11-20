@@ -97,7 +97,7 @@ class AnilistExtractor:
                     break
 
             return records
-        
+
         else:
             while True:
                 variables = {"malId": mal_id, "page": page}
@@ -201,31 +201,20 @@ class AnilistExtractor:
 
                 for anime in data:
                     # Extract status distribution
-                    status_distribution = anime.get("stats", {}).get(
-                        "statusDistribution", []
-                    )
+                    status_distribution = anime.get("stats", {}).get("statusDistribution", [])
                     watch_counts = {
                         status["status"].lower(): status["amount"]
                         for status in status_distribution
                     }
-                    scored_by = anime.get(
-                        "popularity", 0
-                    )  # Using popularity as a proxy for the number of scores
 
                     records.append(
                         {
                             "anime_id": anime["id"],
                             "mal_id": anime.get("idMal"),
-                            "anime_title": anime["title"]["romaji"],
+                            "anime_title": anime["title"].get("romaji"),
                             "average_score": anime.get("averageScore"),
                             "popularity": anime.get("popularity"),
-                            "genres": anime.get("genres", []),  # Genres list
-                            "watching": watch_counts.get("watching", 0),
-                            "completed": watch_counts.get("completed", 0),
-                            "dropped": watch_counts.get("dropped", 0),
-                            "on_hold": watch_counts.get("on_hold", 0),
-                            "plan_to_watch": watch_counts.get("plan_to_watch", 0),
-                            "scored_by": scored_by,
+                            "status_distribution": watch_counts,
                         }
                     )
                 page += 1
@@ -300,9 +289,7 @@ class AnilistExtractor:
 
                 for anime in data:
                     # Extract status distribution
-                    status_distribution = anime.get("stats", {}).get(
-                        "statusDistribution", []
-                    )
+                    status_distribution = anime.get("stats", {}).get("statusDistribution", [])
                     watch_counts = {
                         status["status"].lower(): status["amount"]
                         for status in status_distribution
@@ -312,20 +299,98 @@ class AnilistExtractor:
                         {
                             "anime_id": anime["id"],
                             "mal_id": anime.get("idMal"),
-                            "anime_title": anime["title"]["romaji"],
+                            "anime_title": anime["title"].get("romaji"),
                             "average_score": anime.get("averageScore"),
                             "popularity": anime.get("popularity"),
-                            "watching": watch_counts.get("watching"),
-                            "completed": watch_counts.get("completed"),
-                            "dropped": watch_counts.get("dropped"),
-                            "on_hold": watch_counts.get("on_hold"),
-                            "plan_to_watch": watch_counts.get("plan_to_watch"),
+                            "status_distribution": watch_counts,
                         }
                     )
                 page += 1
             except requests.exceptions.RequestException as e:
                 logging.error(
                     f"Error while fetching anime data for {season} {year} on page {page}: {e}"
+                )
+                break
+
+        return records
+
+    def fetch_trending_anime(self):
+        """
+        Fetch trending anime from AniList API.
+
+        Returns:
+            list: List of dictionaries containing trending anime data and status distribution.
+        """
+        query = """
+        query ($page: Int) {
+            Page(page: $page, perPage: 50) {
+                media(type: ANIME, sort: [TRENDING_DESC]) {
+                    id
+                    idMal
+                    title {
+                        romaji
+                        english
+                    }
+                    averageScore
+                    popularity
+                    stats {
+                        statusDistribution {
+                            status
+                            amount
+                        }
+                    }
+                }
+            }
+        }
+        """
+
+        records = []
+        page = 1
+
+        while page<=1:
+            variables = {"page": page}
+
+            try:
+                response = requests.post(
+                    self.api_url, json={"query": query, "variables": variables}
+                )
+                if response.status_code != 200:
+                    logging.error(
+                        f"Query failed to run by returning code of {response.status_code}. {response.text}"
+                    )
+                    break
+                response.raise_for_status()
+                logging.info(f"Successfully fetched trending anime data, page {page}.")
+                data = response.json()["data"]["Page"]["media"]
+
+                if not data:
+                    logging.info(
+                        f"No more data available after page {page}. All pages have been fetched."
+                    )
+                    break
+
+                for anime in data:
+                    # Extract status distribution
+                    status_distribution = anime.get("stats", {}).get("statusDistribution", [])
+                    watch_counts = {
+                        status["status"].lower(): status["amount"]
+                        for status in status_distribution
+                    }
+
+                    records.append(
+                        {
+                            "anime_id": anime["id"],
+                            "mal_id": anime.get("idMal"),
+                            "anime_title": anime["title"].get("romaji"),
+                            "average_score": anime.get("averageScore"),
+                            "popularity": anime.get("popularity"),
+                            "status_distribution": watch_counts,
+                        }
+                    )
+                page += 1
+            except requests.exceptions.RequestException as e:
+                logging.error(
+                    f"Error while fetching trending anime data on page {page}: {e}"
                 )
                 break
 
@@ -351,10 +416,22 @@ class AnilistExtractor:
         return df
 
 
-# if __name__ == "__main__":
-#     extractor = AnilistExtractor()
+if __name__ == "__main__":
+    extractor = AnilistExtractor()
 
-#     top_anime_data = extractor.fetch_top_anime()
-#     if top_anime_data:
-#         top_anime_df = extractor.extract_to_dataframe(top_anime_data)
-#         print(top_anime_df.head())
+    # test all the functions
+    top_50_anime = extractor.fetch_top_anime()
+    top_50_anime_df = extractor.extract_to_dataframe(top_50_anime)
+    print(top_50_anime_df.head())
+
+    trending_anime = extractor.fetch_trending_anime()
+    trending_anime_df = extractor.extract_to_dataframe(trending_anime)
+    print(trending_anime_df.head())
+
+    anime_reviews = extractor.fetch_anime_reviews_by_mal_id(5114, page_limit=1)
+    anime_reviews_df = extractor.extract_to_dataframe(anime_reviews)
+    print(anime_reviews_df.head())
+
+    anime_by_season = extractor.fetch_anime_by_season(2021, "WINTER")
+    anime_by_season_df = extractor.extract_to_dataframe(anime_by_season)
+    print(anime_by_season_df.head())
