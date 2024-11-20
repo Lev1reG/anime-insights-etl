@@ -2,21 +2,38 @@ import pandas as pd
 import difflib
 import time
 import uuid
+from dotenv import load_dotenv
+import os
+
 # Import the Extraction Functions
 from src.extract.jikan_extractor import JikanExtractor
 from src.extract.anilist_extractor import AnilistExtractor
 # Import the Transformation Functions
 from src.transform.sentiment_analysis import SentimentAnalyzer
 from src.transform.transform_data import TransformAnimeData
+# Import the Load Functions
+from src.load.load_postgresql import LoadPsql
 # Import the Utils
 from src.utils import save_data_to_file
 from src.utils.save_data_to_file import SaveData
+
+load_dotenv()
+
+# Database configuration
+db_config = {
+    'host': os.getenv('DB_HOST'),
+    'dbname': os.getenv('DB_NAME'),
+    'user': os.getenv('DB_USER'),
+    'password': os.getenv('DB_PASSWORD'),
+    'port': 5432
+}
 
 if __name__ == '__main__':
   jikan_extractor = JikanExtractor()
   anilist_extractor = AnilistExtractor()
   sentiment_analyzer = SentimentAnalyzer()
   transformer = TransformAnimeData(sentiment_analyzer=sentiment_analyzer)
+  dataloader = LoadPsql()
 
   # UNCOMMENT THIS LATER
   # Get top 50 anime from Jikan and transform into DataFrame
@@ -36,5 +53,12 @@ if __name__ == '__main__':
   # Save results
   SaveData.save_data_to_file(merged_data, 'data/merged_anime_data', file_format='csv')
   SaveData.save_data_to_file(reviews_df, 'data/anime_reviews_table', file_format='csv')
+
+  # Load transformed data into PostgreSQL
+  # dataloader.load_to_postgresql(merged_data, 'anime_data', db_config)
+  # dataloader.load_to_postgresql(reviews_df, 'anime_review', db_config)
+
+
+
 
   print("Data transformation and review processing complete.")
