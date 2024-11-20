@@ -214,7 +214,12 @@ class AnilistExtractor:
                             "anime_title": anime["title"].get("romaji"),
                             "average_score": anime.get("averageScore"),
                             "popularity": anime.get("popularity"),
-                            "status_distribution": watch_counts,
+                            "current": watch_counts['current'],
+                            "planning": watch_counts['planning'],
+                            "completed": watch_counts['completed'],
+                            "dropped": watch_counts['dropped'],
+                            "paused": watch_counts['paused'],
+
                         }
                     )
                 page += 1
@@ -302,7 +307,12 @@ class AnilistExtractor:
                             "anime_title": anime["title"].get("romaji"),
                             "average_score": anime.get("averageScore"),
                             "popularity": anime.get("popularity"),
-                            "status_distribution": watch_counts,
+                            "current": watch_counts['current'],
+                            "planning": watch_counts['planning'],
+                            "completed": watch_counts['completed'],
+                            "dropped": watch_counts['dropped'],
+                            "paused": watch_counts['paused'],
+
                         }
                     )
                 page += 1
@@ -384,7 +394,12 @@ class AnilistExtractor:
                             "anime_title": anime["title"].get("romaji"),
                             "average_score": anime.get("averageScore"),
                             "popularity": anime.get("popularity"),
-                            "status_distribution": watch_counts,
+                            "current": watch_counts['current'],
+                            "planning": watch_counts['planning'],
+                            "completed": watch_counts['completed'],
+                            "dropped": watch_counts['dropped'],
+                            "paused": watch_counts['paused'],
+
                         }
                     )
                 page += 1
@@ -420,18 +435,20 @@ if __name__ == "__main__":
     extractor = AnilistExtractor()
 
     # test all the functions
-    top_50_anime = extractor.fetch_top_anime()
-    top_50_anime_df = extractor.extract_to_dataframe(top_50_anime)
-    print(top_50_anime_df.head())
+    # top_50_anime = extractor.fetch_top_anime()
+    # top_50_anime_df = extractor.extract_to_dataframe(top_50_anime)
+    # print(top_50_anime_df.head())
 
     trending_anime = extractor.fetch_trending_anime()
     trending_anime_df = extractor.extract_to_dataframe(trending_anime)
     print(trending_anime_df.head())
 
-    anime_reviews = extractor.fetch_anime_reviews_by_mal_id(5114, page_limit=1)
-    anime_reviews_df = extractor.extract_to_dataframe(anime_reviews)
-    print(anime_reviews_df.head())
+    trending_anime_df.to_csv('trending_anime_fixed.csv', index=False)
 
-    anime_by_season = extractor.fetch_anime_by_season(2021, "WINTER")
-    anime_by_season_df = extractor.extract_to_dataframe(anime_by_season)
-    print(anime_by_season_df.head())
+    # anime_reviews = extractor.fetch_anime_reviews_by_mal_id(5114, page_limit=1)
+    # anime_reviews_df = extractor.extract_to_dataframe(anime_reviews)
+    # print(anime_reviews_df.head())
+
+    # anime_by_season = extractor.fetch_anime_by_season(2021, "WINTER")
+    # anime_by_season_df = extractor.extract_to_dataframe(anime_by_season)
+    # print(anime_by_season_df.head())
