@@ -45,7 +45,7 @@ if __name__ == '__main__':
   elif 6 <= current_month <= 8:
     current_season = 'summer'
   elif 9 <= current_month <= 11:
-    current_season = 'autumn'
+    current_season = 'fall'
   else:
     current_season = 'winter'
 
@@ -69,7 +69,7 @@ if __name__ == '__main__':
 
   # Get current season data from Jikan
   current_season_jikan = jikan_extractor.fetch_anime_by_season(year=current_year, season=current_season)
-  current_season_jikan_df = anilist_extractor.extract_to_dataframe(current_season_jikan)
+  current_season_jikan_df = jikan_extractor.extract_to_dataframe(current_season_jikan)
 
   ############### TRANSFORM DATA ###############
   # Transform top 50 data
