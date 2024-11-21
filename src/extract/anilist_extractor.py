@@ -2,6 +2,7 @@ from numpy.random import f
 import requests
 import pandas as pd
 import logging
+from datetime import date
 
 pd.set_option("display.max_columns", 200)
 
@@ -201,9 +202,9 @@ class AnilistExtractor:
 
                 for anime in data:
                     # Extract status distribution
-                    status_distribution = anime.get("stats", {}).get("statusDistribution", [])
+                    status_distribution = anime.get("stats", {}).get("statusDistribution", []) or []
                     watch_counts = {
-                        status["status"].lower(): status["amount"]
+                        status.get("status", "").lower(): status.get("amount", 0)
                         for status in status_distribution
                     }
 
@@ -214,12 +215,11 @@ class AnilistExtractor:
                             "anime_title": anime["title"].get("romaji"),
                             "average_score": anime.get("averageScore"),
                             "popularity": anime.get("popularity"),
-                            "current": watch_counts['current'],
-                            "planning": watch_counts['planning'],
-                            "completed": watch_counts['completed'],
-                            "dropped": watch_counts['dropped'],
-                            "paused": watch_counts['paused'],
-
+                            "current": watch_counts.get('current', 0),
+                            "planning": watch_counts.get('planning', 0),
+                            "completed": watch_counts.get('completed', 0),
+                            "dropped": watch_counts.get('dropped', 0),
+                            "paused": watch_counts.get('paused', 0),
                         }
                     )
                 page += 1
@@ -294,9 +294,9 @@ class AnilistExtractor:
 
                 for anime in data:
                     # Extract status distribution
-                    status_distribution = anime.get("stats", {}).get("statusDistribution", [])
+                    status_distribution = anime.get("stats", {}).get("statusDistribution", []) or []
                     watch_counts = {
-                        status["status"].lower(): status["amount"]
+                        status.get("status", "").lower(): status.get("amount", 0)
                         for status in status_distribution
                     }
 
@@ -307,12 +307,11 @@ class AnilistExtractor:
                             "anime_title": anime["title"].get("romaji"),
                             "average_score": anime.get("averageScore"),
                             "popularity": anime.get("popularity"),
-                            "current": watch_counts['current'],
-                            "planning": watch_counts['planning'],
-                            "completed": watch_counts['completed'],
-                            "dropped": watch_counts['dropped'],
-                            "paused": watch_counts['paused'],
-
+                            "current": watch_counts.get('current', 0),
+                            "planning": watch_counts.get('planning', 0),
+                            "completed": watch_counts.get('completed', 0),
+                            "dropped": watch_counts.get('dropped', 0),
+                            "paused": watch_counts.get('paused', 0),
                         }
                     )
                 page += 1
@@ -357,7 +356,7 @@ class AnilistExtractor:
         records = []
         page = 1
 
-        while page<=1:
+        while page <= 1:
             variables = {"page": page}
 
             try:
@@ -381,9 +380,9 @@ class AnilistExtractor:
 
                 for anime in data:
                     # Extract status distribution
-                    status_distribution = anime.get("stats", {}).get("statusDistribution", [])
+                    status_distribution = anime.get("stats", {}).get("statusDistribution", []) or []
                     watch_counts = {
-                        status["status"].lower(): status["amount"]
+                        status.get("status", "").lower(): status.get("amount", 0)
                         for status in status_distribution
                     }
 
@@ -394,12 +393,11 @@ class AnilistExtractor:
                             "anime_title": anime["title"].get("romaji"),
                             "average_score": anime.get("averageScore"),
                             "popularity": anime.get("popularity"),
-                            "current": watch_counts['current'],
-                            "planning": watch_counts['planning'],
-                            "completed": watch_counts['completed'],
-                            "dropped": watch_counts['dropped'],
-                            "paused": watch_counts['paused'],
-
+                            "current": watch_counts.get('current', 0),
+                            "planning": watch_counts.get('planning', 0),
+                            "completed": watch_counts.get('completed', 0),
+                            "dropped": watch_counts.get('dropped', 0),
+                            "paused": watch_counts.get('paused', 0),
                         }
                     )
                 page += 1
@@ -420,7 +418,6 @@ class AnilistExtractor:
 
         Returns:
             DataFrame: Pandas DataFrame containing the data.
-                                "review_summary": review["summary"],
         """
         if not isinstance(data, list):
             logging.error("Input data must be a list.")
@@ -432,23 +429,28 @@ class AnilistExtractor:
 
 
 if __name__ == "__main__":
-    extractor = AnilistExtractor()
+    anilist_extractor = AnilistExtractor()
 
     # test all the functions
     # top_50_anime = extractor.fetch_top_anime()
     # top_50_anime_df = extractor.extract_to_dataframe(top_50_anime)
     # print(top_50_anime_df.head())
 
-    trending_anime = extractor.fetch_trending_anime()
-    trending_anime_df = extractor.extract_to_dataframe(trending_anime)
-    print(trending_anime_df.head())
-
-    trending_anime_df.to_csv('trending_anime_fixed.csv', index=False)
-
     # anime_reviews = extractor.fetch_anime_reviews_by_mal_id(5114, page_limit=1)
     # anime_reviews_df = extractor.extract_to_dataframe(anime_reviews)
     # print(anime_reviews_df.head())
 
-    # anime_by_season = extractor.fetch_anime_by_season(2021, "WINTER")
-    # anime_by_season_df = extractor.extract_to_dataframe(anime_by_season)
-    # print(anime_by_season_df.head())
+    current_year = date.today().year
+    current_month = date.today().month
+    if 3 <= current_month <= 5:
+        current_season = 'SPRING'
+    elif 6 <= current_month <= 8:
+        current_season = 'SUMMER'
+    elif 9 <= current_month <= 11:
+        current_season = 'FALL'
+    else:
+        current_season = 'WINTER'
+    current_season_anilist = anilist_extractor.fetch_anime_by_season(year=current_year, season=current_season)
+    current_season_anilist_df = anilist_extractor.extract_to_dataframe(current_season_anilist)
+    print(current_season_anilist_df.head())
+

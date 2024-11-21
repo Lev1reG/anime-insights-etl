@@ -95,6 +95,14 @@ class TransformAnimeData:
             suffixes=('_jikan', '_anilist')
         )
 
+        # Convert merged_data['genres'] to a PostgreSQL array literal format
+        if 'genres' in merged_data.columns:
+            merged_data['genres'] = merged_data['genres'].apply(lambda x: '{' + ','.join([f'"{genre}"' for genre in x.split(', ')]) + '}' if isinstance(x, str) else x)
+        if 'studios' in merged_data.columns:
+            merged_data['studios'] = merged_data['studios'].apply(lambda x: '{' + ','.join([f'"{genre.strip()}"' for genre in eval(x)]) + '}' if isinstance(x, str) and x.startswith('[') else x)
+        if 'producers' in merged_data.columns:
+            merged_data['producers'] = merged_data['producers'].apply(lambda x: '{' + ','.join([f'"{producer.strip()}"' for producer in eval(x)]) + '}' if isinstance(x, str) and x.startswith('[') else x)
+
         # Combine titles
         # merged_data['title'] = merged_data['title_jikan'].combine_first(merged_data['title_anilist'])
         merged_data['title'] = merged_data.apply(self.find_similar_titles, axis=1)
