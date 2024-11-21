@@ -43,7 +43,7 @@ with DAG(
     'anime_etl_dag',
     default_args={'retries': 1},
     description='ETL pipeline for anime data and reviews',
-    schedule_interval='@daily',
+    schedule_interval='@weekly',
     start_date=datetime.datetime(2024, 11, 20),
     catchup=False,
 ) as dag:
